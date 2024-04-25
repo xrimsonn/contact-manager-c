@@ -1,13 +1,10 @@
 #include "contacts.h"
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include "utils.h"
 
 Contact *contacts = NULL;
 int size = 0;
 
+// Main menu of the application
 void run_menu() {
   load_contacts_from_file();
   int opt = -1;
@@ -56,10 +53,29 @@ void run_menu() {
   } while (opt != 0);
 }
 
+void print_contacts() {
+  if (size == 0) {
+    printf("No contacts found\n");
+  } else {
+    printf("-------List-------\n");
+    for (int i = 0; i < size; i++) {
+      if (i > 0)
+        printf("--------\n");
+      printf("%s\n", contacts[i].name);
+      printf("%s\n", contacts[i].phone_number);
+      printf("%s\n", contacts[i].address);
+    }
+  }
+  printf("\n");
+}
+
+// Contacts operations
 void add_contact() {
   printf("--------Add-------\n");
   char *new_name = malloc(50 * sizeof(char));
   read_string_input("Enter the name of the new contact", new_name);
+
+  char *original_name = strdup(new_name);
 
   for (int i = 0; new_name[i]; i++) {
     new_name[i] = tolower(new_name[i]);
@@ -73,8 +89,10 @@ void add_contact() {
 
     if (strcmp(to_lower_name, new_name) == 0) {
       printf("A contact with the same name already exists\n");
+      printf("\n");
       free(to_lower_name);
       free(new_name);
+      free(original_name);
       return;
     }
 
@@ -83,91 +101,18 @@ void add_contact() {
 
   size++;
   Contact new_contact;
-  new_contact.name = malloc(50 * sizeof(char));
-  strncpy(new_contact.name, new_name, 50);
+  new_contact.name = original_name;
   new_contact.phone_number = malloc(20 * sizeof(char));
   new_contact.address = malloc(100 * sizeof(char));
 
-  read_string_input("Enter full name", new_contact.name);
   read_string_input("Enter phone number", new_contact.phone_number);
   read_string_input("Enter address", new_contact.address);
 
   contacts = realloc(contacts, size * sizeof(Contact));
   contacts[size - 1] = new_contact;
-}
 
-void read_string_input(char *msg, char *str) {
-  printf("%s: ", msg);
-  scanf("%[^\n]", str);
-  getchar();
-}
-
-void print_contacts() {
-  if (size == 0) {
-    printf("No contacts found");
-  } else {
-    printf("-------List-------\n");
-    for (int i = 0; i < size; i++) {
-      if (i > 0)
-        printf("--------\n");
-      printf("%s\n", contacts[i].name);
-      printf("%s\n", contacts[i].phone_number);
-      printf("%s\n", contacts[i].address);
-    }
-    printf("\n");
-  }
-}
-
-void save_contacts_to_file() {
-  if (size == 0) {
-    return;
-  } else {
-    FILE *file;
-    file = fopen("contacts", "w");
-
-    for (int i = 0; i < size; i++) {
-      fprintf(file, "%s\n", contacts[i].name);
-      fprintf(file, "%s\n", contacts[i].phone_number);
-      fprintf(file, "%s\n", contacts[i].address);
-    }
-    fclose(file);
-  }
-}
-
-void load_contacts_from_file() {
-  if (access("contacts", F_OK) == 0) {
-    FILE *file;
-    char *line = NULL;
-    size_t len = 0;
-    int counter = 0;
-    ssize_t read;
-    file = fopen("contacts", "r");
-    Contact temp_contact;
-    temp_contact.name = NULL;
-    temp_contact.phone_number = NULL;
-    temp_contact.address = NULL;
-
-    while ((read = getline(&line, &len, file)) != -1) {
-      line[strcspn(line, "\n")] = 0;
-      if (counter % 3 == 0) {
-        temp_contact.name = malloc(50 * sizeof(char));
-        strncpy(temp_contact.name, line, 50);
-      }
-      if (counter % 3 == 1) {
-        temp_contact.phone_number = malloc(20 * sizeof(char));
-        strncpy(temp_contact.phone_number, line, 20);
-      }
-      if (counter % 3 == 2) {
-        temp_contact.address = malloc(100 * sizeof(char));
-        strncpy(temp_contact.address, line, 100);
-        size++;
-        contacts = realloc(contacts, size * sizeof(Contact));
-        contacts[size - 1] = temp_contact;
-      }
-      counter++;
-    }
-    free(line);
-  }
+  printf("\n");
+  free(new_name);
 }
 
 void search_contact() {
@@ -200,7 +145,6 @@ void search_contact() {
   }
 
   printf("\n");
-
   free(search_input);
 }
 
@@ -238,13 +182,4 @@ void delete_contact() {
   }
   printf("\n");
   free(search_input);
-}
-
-void free_contacts() {
-  for (int i = 0; i < size; i++) {
-    free(contacts[i].name);
-    free(contacts[i].phone_number);
-    free(contacts[i].address);
-  }
-  free(contacts);
 }
